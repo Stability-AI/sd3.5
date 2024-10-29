@@ -382,7 +382,7 @@ CONFIGS = {
     },
     "sd3.5_medium": {
         "shift": 3.0,
-        "cfg": 4.0,
+        "cfg": 5.0,
         "steps": 50,
         "sampler": "dpmpp_2m",
         "skip_layer_config": {
@@ -390,6 +390,7 @@ CONFIGS = {
             "start": 0.01,
             "end": 0.20,
             "layers": [7, 8, 9],
+            "cfg": 4.0,
         },
     },
     "sd3.5_large": {
@@ -434,16 +435,13 @@ def main(
     sampler = sampler or CONFIGS.get(
         os.path.splitext(os.path.basename(model))[0], {}
     ).get("sampler", "dpmpp_2m")
-    skip_layer_config = (
-        CONFIGS.get(os.path.splitext(os.path.basename(model))[0], {}).get(
-            "skip_layer_config", {}
-        )
-        if skip_layer_cfg
-        else {}
-    )
-    sampler = sampler or CONFIGS.get(
-        os.path.splitext(os.path.basename(model))[0], {}
-    ).get("sampler", "dpmpp_2m")
+    if skip_layer_cfg:
+        skip_layer_config = CONFIGS.get(
+            os.path.splitext(os.path.basename(model))[0], {}
+        ).get("skip_layer_config", {})
+        cfg = skip_layer_config.get("cfg", cfg)
+    else:
+        skip_layer_config = {}
 
     inferencer = SD3Inferencer()
     inferencer.load(model, vae, shift, verbose)
