@@ -869,6 +869,7 @@ class MMDiTX(nn.Module):
         x: torch.Tensor,
         c_mod: torch.Tensor,
         context: Optional[torch.Tensor] = None,
+        layer_drops: Optional[List] = [],
     ) -> torch.Tensor:
         if self.register_length > 0:
             context = torch.cat(
@@ -881,7 +882,9 @@ class MMDiTX(nn.Module):
 
         # context is B, L', D
         # x is B, L, D
-        for block in self.joint_blocks:
+        for i, block in enumerate(self.joint_blocks):
+            if i in layer_drops:
+                continue
             context, x = block(context, x, c=c_mod)
 
         x = self.final_layer(x, c_mod)  # (N, T, patch_size ** 2 * out_channels)
@@ -893,6 +896,7 @@ class MMDiTX(nn.Module):
         t: torch.Tensor,
         y: Optional[torch.Tensor] = None,
         context: Optional[torch.Tensor] = None,
+        layer_drops: Optional[List] = [],
     ) -> torch.Tensor:
         """
         Forward pass of DiT.
@@ -909,7 +913,7 @@ class MMDiTX(nn.Module):
 
         context = self.context_embedder(context)
 
-        x = self.forward_core_with_concat(x, c, context)
+        x = self.forward_core_with_concat(x, c, context, layer_drops)
 
         x = self.unpatchify(x, hw=hw)  # (N, out_channels, H, W)
         return x

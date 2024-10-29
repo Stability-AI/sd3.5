@@ -113,11 +113,15 @@ class BaseModel(torch.nn.Module):
         )
         self.model_sampling = ModelSamplingDiscreteFlow(shift=shift)
 
-    def apply_model(self, x, sigma, c_crossattn=None, y=None):
+    def apply_model(self, x, sigma, c_crossattn=None, y=None, layer_drops=[]):
         dtype = self.get_dtype()
         timestep = self.model_sampling.timestep(sigma).float()
         model_output = self.diffusion_model(
-            x.to(dtype), timestep, context=c_crossattn.to(dtype), y=y.to(dtype)
+            x.to(dtype),
+            timestep,
+            context=c_crossattn.to(dtype),
+            y=y.to(dtype),
+            layer_drops=layer_drops,
         ).float()
         return self.model_sampling.calculate_denoised(sigma, model_output, x)
 
@@ -131,11 +135,18 @@ class BaseModel(torch.nn.Module):
 class CFGDenoiser(torch.nn.Module):
     """Helper for applying CFG Scaling to diffusion outputs"""
 
-    def __init__(self, model):
+    def __init__(self, model, *args):
         super().__init__()
         self.model = model
 
-    def forward(self, x, timestep, cond, uncond, cond_scale):
+    def forward(
+        self,
+        x,
+        timestep,
+        cond,
+        uncond,
+        cond_scale,
+    ):
         # Run cond and uncond in a batch together
         batched = self.model.apply_model(
             torch.cat([x, x]),
@@ -146,6 +157,53 @@ class CFGDenoiser(torch.nn.Module):
         # Then split and apply CFG Scaling
         pos_out, neg_out = batched.chunk(2)
         scaled = neg_out + (pos_out - neg_out) * cond_scale
+        return scaled
+
+
+class LayerDropCFGDenoiser(torch.nn.Module):
+    """Helper for applying CFG Scaling to diffusion outputs"""
+
+    def __init__(self, model, steps, layer_drop_config):
+        super().__init__()
+        self.model = model
+        self.steps = steps
+        self.layer_drop_scale = layer_drop_config["layer_drop_scale"]
+        self.layer_drop_frac = layer_drop_config["layer_drop_frac"]
+        self.layer_drops = layer_drop_config["layer_drops"]
+        self.step = 0
+
+    def forward(
+        self,
+        x,
+        timestep,
+        cond,
+        uncond,
+        cond_scale,
+    ):
+        # Run cond and uncond in a batch together
+        batched = self.model.apply_model(
+            torch.cat([x, x]),
+            torch.cat([timestep, timestep]),
+            c_crossattn=torch.cat([cond["c_crossattn"], uncond["c_crossattn"]]),
+            y=torch.cat([cond["y"], uncond["y"]]),
+        )
+        # Then split and apply CFG Scaling
+        pos_out, neg_out = batched.chunk(2)
+        scaled = neg_out + (pos_out - neg_out) * cond_scale
+        # Then apply layer drop
+        if self.layer_drop_scale > 0 and self.step < (
+            self.layer_drop_frac * self.steps
+        ):
+            layer_drop_out = self.model.apply_model(
+                x,
+                timestep,
+                c_crossattn=cond["c_crossattn"],
+                y=cond["y"],
+                layer_drops=self.layer_drops,
+            )
+            # Then scale acc to layer drop out
+            scaled = scaled + (scaled - layer_drop_out) * self.layer_drop_scale
+        self.step += 1
         return scaled
 
 
