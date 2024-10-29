@@ -113,7 +113,7 @@ class BaseModel(torch.nn.Module):
         )
         self.model_sampling = ModelSamplingDiscreteFlow(shift=shift)
 
-    def apply_model(self, x, sigma, c_crossattn=None, y=None, layer_drops=[]):
+    def apply_model(self, x, sigma, c_crossattn=None, y=None, skip_layers=[]):
         dtype = self.get_dtype()
         timestep = self.model_sampling.timestep(sigma).float()
         model_output = self.diffusion_model(
@@ -121,7 +121,7 @@ class BaseModel(torch.nn.Module):
             timestep,
             context=c_crossattn.to(dtype),
             y=y.to(dtype),
-            layer_drops=layer_drops,
+            skip_layers=skip_layers,
         ).float()
         return self.model_sampling.calculate_denoised(sigma, model_output, x)
 
@@ -160,16 +160,17 @@ class CFGDenoiser(torch.nn.Module):
         return scaled
 
 
-class LayerDropCFGDenoiser(torch.nn.Module):
+class SkipLayerCFGDenoiser(torch.nn.Module):
     """Helper for applying CFG Scaling to diffusion outputs"""
 
-    def __init__(self, model, steps, layer_drop_config):
+    def __init__(self, model, steps, skip_layer_config):
         super().__init__()
         self.model = model
         self.steps = steps
-        self.layer_drop_scale = layer_drop_config["layer_drop_scale"]
-        self.layer_drop_frac = layer_drop_config["layer_drop_frac"]
-        self.layer_drops = layer_drop_config["layer_drops"]
+        self.slg = skip_layer_config["scale"]
+        self.skip_start = skip_layer_config["start"]
+        self.skip_end = skip_layer_config["end"]
+        self.skip_layers = skip_layer_config["layers"]
         self.step = 0
 
     def forward(
@@ -190,19 +191,21 @@ class LayerDropCFGDenoiser(torch.nn.Module):
         # Then split and apply CFG Scaling
         pos_out, neg_out = batched.chunk(2)
         scaled = neg_out + (pos_out - neg_out) * cond_scale
-        # Then apply layer drop
-        if self.layer_drop_scale > 0 and self.step < (
-            self.layer_drop_frac * self.steps
+        # Then run with skip layer
+        if (
+            self.slg > 0
+            and self.step > (self.skip_start * self.steps)
+            and self.step < (self.skip_end * self.steps)
         ):
-            layer_drop_out = self.model.apply_model(
+            skip_layer_out = self.model.apply_model(
                 x,
                 timestep,
                 c_crossattn=cond["c_crossattn"],
                 y=cond["y"],
-                layer_drops=self.layer_drops,
+                skip_layers=self.skip_layers,
             )
-            # Then scale acc to layer drop out
-            scaled = scaled + (scaled - layer_drop_out) * self.layer_drop_scale
+            # Then scale acc to skip layer guidance
+            scaled = scaled + (pos_out - skip_layer_out) * self.slg
         self.step += 1
         return scaled
 

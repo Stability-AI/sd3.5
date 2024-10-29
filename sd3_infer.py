@@ -23,8 +23,8 @@ from sd3_impls import (
     SDVAE,
     BaseModel,
     CFGDenoiser,
-    LayerDropCFGDenoiser,
     SD3LatentFormat,
+    SkipLayerCFGDenoiser,
 )
 
 #################################################################################################
@@ -263,7 +263,7 @@ class SD3Inferencer:
         cfg_scale,
         sampler="dpmpp_2m",
         denoise=1.0,
-        layer_drop_config={},
+        skip_layer_config={},
     ) -> torch.Tensor:
         self.print("Sampling...")
         latent = latent.half().cuda()
@@ -279,12 +279,12 @@ class SD3Inferencer:
         )
         sample_fn = getattr(sd3_impls, f"sample_{sampler}")
         denoiser = (
-            LayerDropCFGDenoiser
-            if layer_drop_config.get("layer_drop_scale", 0) > 0
+            SkipLayerCFGDenoiser
+            if skip_layer_config.get("scale", 0) > 0
             else CFGDenoiser
         )
         latent = sample_fn(
-            denoiser(self.sd3.model, steps, layer_drop_config),
+            denoiser(self.sd3.model, steps, skip_layer_config),
             noise_scaled,
             sigmas,
             extra_args=extra_args,
@@ -336,7 +336,7 @@ class SD3Inferencer:
         out_dir=OUTDIR,
         init_image=INIT_IMAGE,
         denoise=DENOISE,
-        layer_drop_config={},
+        skip_layer_config={},
     ):
         latent = self.get_empty_latent(width, height)
         if init_image:
@@ -364,7 +364,7 @@ class SD3Inferencer:
                 cfg_scale,
                 sampler,
                 denoise if init_image else 1.0,
-                layer_drop_config,
+                skip_layer_config,
             )
             image = self.vae_decode(sampled_latent)
             save_path = os.path.join(out_dir, f"{i:06d}.png")
@@ -382,13 +382,14 @@ CONFIGS = {
     },
     "sd3.5_medium": {
         "shift": 3.0,
-        "cfg": 4.0,
+        "cfg": 5.0,
         "steps": 50,
         "sampler": "dpmpp_2m",
-        "layer_drop_config": {
-            "layer_drop_scale": 3.0,
-            "layer_drop_frac": 0.6,
-            "layer_drops": [7, 8, 9],
+        "skip_layer_config": {
+            "scale": 2.5,
+            "start": 0.01,
+            "end": 0.30,
+            "layers": [7, 8, 9],
         },
     },
     "sd3.5_large": {
@@ -418,7 +419,7 @@ def main(
     vae=VAEFile,
     init_image=INIT_IMAGE,
     denoise=DENOISE,
-    layer_drop_cfg=False,
+    skip_layer_cfg=False,
     verbose=False,
 ):
     steps = steps or CONFIGS.get(os.path.splitext(os.path.basename(model))[0], {}).get(
@@ -433,11 +434,11 @@ def main(
     sampler = sampler or CONFIGS.get(
         os.path.splitext(os.path.basename(model))[0], {}
     ).get("sampler", "dpmpp_2m")
-    layer_drop_config = (
+    skip_layer_config = (
         CONFIGS.get(os.path.splitext(os.path.basename(model))[0], {}).get(
-            "layer_drop_config", {}
+            "skip_layer_config", {}
         )
-        if layer_drop_cfg
+        if skip_layer_cfg
         else {}
     )
 
@@ -472,7 +473,7 @@ def main(
         out_dir,
         init_image,
         denoise,
-        layer_drop_config,
+        skip_layer_config,
     )
 
 
