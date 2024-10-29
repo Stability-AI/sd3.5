@@ -56,7 +56,7 @@ python3 sd3_infer.py --prompt path/to/my_prompts.txt --postfix "steps100" --step
 To change the resolution of the generated image, add `--width <WIDTH> --height <HEIGHT>`.
 
 Optionally, use [Skip Layer Guidance](https://github.com/comfyanonymous/ComfyUI/pull/5404) for potentially better struture and anatomy coherency from SD3.5-Medium.
-```
+```sh
 python3 sd3_infer.py --prompt path/to/my_prompts.txt --model models/sd3.5_medium.safetensors --skip_layer_cfg True
 ```
 
