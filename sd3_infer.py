@@ -441,6 +441,9 @@ def main(
         if skip_layer_cfg
         else {}
     )
+    sampler = sampler or CONFIGS.get(
+        os.path.splitext(os.path.basename(model))[0], {}
+    ).get("sampler", "dpmpp_2m")
 
     inferencer = SD3Inferencer()
     inferencer.load(model, vae, shift, verbose)
