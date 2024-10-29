@@ -382,6 +382,7 @@ CONFIGS = {
     },
     "sd3.5_medium": {
         "shift": 3.0,
+<<<<<<< HEAD
         "cfg": 4.0,
         "steps": 50,
         "sampler": "dpmpp_2m",
@@ -391,6 +392,11 @@ CONFIGS = {
             "end": 0.20,
             "layers": [7, 8, 9],
         },
+=======
+        "cfg": 5.0,
+        "steps": 50,
+        "sampler": "dpmpp_2m",
+>>>>>>> SD3.5 Medium (#10)
     },
     "sd3.5_large": {
         "shift": 3.0,
