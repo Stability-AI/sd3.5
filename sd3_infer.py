@@ -382,13 +382,13 @@ CONFIGS = {
     },
     "sd3.5_medium": {
         "shift": 3.0,
-        "cfg": 5.0,
+        "cfg": 4.0,
         "steps": 50,
         "sampler": "dpmpp_2m",
         "skip_layer_config": {
             "scale": 2.5,
             "start": 0.01,
-            "end": 0.30,
+            "end": 0.20,
             "layers": [7, 8, 9],
         },
     },
