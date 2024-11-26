@@ -6,13 +6,14 @@ Contains code for the text encoders (OpenAI CLIP-L/14, OpenCLIP bigG, Google T5-
 
 Note: this repo is a reference library meant to assist partner organizations in implementing SD3.5/SD3. For alternate inference, use [Comfy](https://github.com/comfyanonymous/ComfyUI).
 
-### Updates
+## Updates
 
+- Nov 26, 2024 : Released ControlNets for SD3.5-Large.
 - Oct 29, 2024 : Released inference code for SD3.5-Medium.
 - Oct 24, 2024 : Updated code license to MIT License.
 - Oct 22, 2024 : Released inference code for SD3.5-Large, Large-Turbo. Also works on SD3-Medium.
 
-### Download
+## Download
 
 Download the following models from HuggingFace into `models` directory:
 1. [Stability AI SD3.5 Large](https://huggingface.co/stabilityai/stable-diffusion-3.5-large/blob/main/sd3.5_large.safetensors) or [Stability AI SD3.5 Large Turbo](https://huggingface.co/stabilityai/stable-diffusion-3.5-large-turbo/blob/main/sd3.5_large_turbo.safetensors) or [Stability AI SD3.5 Medium](https://huggingface.co/stabilityai/stable-diffusion-3.5-medium/blob/main/sd3.5_medium.safetensors)
@@ -22,12 +23,12 @@ Download the following models from HuggingFace into `models` directory:
 
 This code also works for [Stability AI SD3 Medium](https://huggingface.co/stabilityai/stable-diffusion-3-medium/blob/main/sd3_medium.safetensors).
 
-#### ControlNets
+### ControlNets
 
 Optionally, download [SD3.5 Large ControlNets](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets):
-(a) [Blur ControlNet](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets/resolve/main/blur_8b.safetensors)
-(b) [Canny ControlNet](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets/resolve/main/canny_8b.safetensors)
-(c) [Depth ControlNet](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets/resolve/main/depth_8b.safetensors)
+- [Blur ControlNet](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets/resolve/main/blur_8b.safetensors)
+- [Canny ControlNet](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets/resolve/main/canny_8b.safetensors)
+- [Depth ControlNet](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets/resolve/main/depth_8b.safetensors)
 
 ```py
 from huggingface_hub import hf_hub_download
@@ -36,7 +37,7 @@ hf_hub_download("stabilityai/stable-diffusion-3.5-controlnets", "sd3.5_large_con
 hf_hub_download("stabilityai/stable-diffusion-3.5-controlnets", "sd3.5_large_controlnet_depth.safetensors", local_dir="models")
 ```
 
-### Install
+## Install
 
 ```sh
 # Note: on windows use "python" not "python3"
@@ -46,7 +47,7 @@ source .sd3.5/bin/activate
 python3 -s -m pip install -r requirements.txt
 ```
 
-### Run
+## Run
 
 ```sh
 # Generate a cat using SD3.5 Large model (at models/sd3.5_large.safetensors) with its default settings
@@ -74,25 +75,25 @@ Optionally, use [Skip Layer Guidance](https://github.com/comfyanonymous/ComfyUI/
 python3 sd3_infer.py --prompt path/to/my_prompts.txt --model models/sd3.5_medium.safetensors --skip_layer_cfg True
 ```
 
-#### ControlNets
+### ControlNets
 
 To use SD3.5 Large ControlNets, additionally download your chosen ControlNet model from the [model repository](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets), then run inference, like so:
-(a) Blur:
+- Blur:
 ```sh
 python sd3_infer.py --model models/sd3.5_large.safetensors --controlnet_ckpt models/sd3.5_large_controlnet_blur.safetensors --controlnet_cond_image inputs/blur.png --prompt "generated ai art, a tiny, lost rubber ducky in an action shot close-up, surfing the humongous waves, inside the tube, in the style of Kelly Slater"
 ```
-(b) Canny:
+- Canny:
 ```sh
 python sd3_infer.py --model models/sd3.5_large.safetensors --controlnet_ckpt models/sd3.5_large_controlnet_canny.safetensors --controlnet_cond_image inputs/canny.png --prompt "A Night time photo taken by Leica M11, portrait of a Japanese woman in a kimono, looking at the camera, Cherry blossoms"
 ```
-(c) Depth:
+- Depth:
 ```sh
 python sd3_infer.py --model models/sd3.5_large.safetensors --controlnet_ckpt models/sd3.5_large_controlnet_depth.safetensors --controlnet_cond_image inputs/depth.png --prompt "photo of woman, presumably in her mid-thirties, striking a balanced yoga pose on a rocky outcrop during dusk or dawn. She wears a light gray t-shirt and dark leggings. Her pose is dynamic, with one leg extended backward and the other bent at the knee, holding the moon close to her hand."
 ```
 
 For details on preprocessing for each of the ControlNets, and examples, please review the [model card](https://huggingface.co/stabilityai/stable-diffusion-3.5-controlnets).
 
-### File Guide
+## File Guide
 
 - `sd3_infer.py` - entry point, review this for basic usage of diffusion model
 - `sd3_impls.py` - contains the wrapper around the MMDiTX and the VAE
@@ -104,7 +105,7 @@ For details on preprocessing for each of the ControlNets, and examples, please r
     - `t5xxl.safetensors` (google T5-v1.1-XXL, can grab a public copy)
     - `sd3.5_large.safetensors` or `sd3.5_large_turbo.safetensors` or `sd3.5_medium.safetensors` (or `sd3_medium.safetensors`)
 
-### Code Origin
+## Code Origin
 
 The code included here originates from:
 - Stability AI internal research code repository (MM-DiT)
@@ -113,10 +114,10 @@ The code included here originates from:
 - Some code from ComfyUI internal Stability implementation of SD3 (for some code corrections and handlers)
 - HuggingFace and upstream providers (for sections of CLIP/T5 code)
 
-### Legal
+## Legal
 
 Check the LICENSE-CODE file.
 
-#### Note
+### Note
 
 Some code in `other_impls` originates from HuggingFace and is subject to [the HuggingFace Transformers Apache2 License](https://github.com/huggingface/transformers/blob/main/LICENSE)
