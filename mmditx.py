@@ -835,7 +835,7 @@ class MMDiTX(nn.Module):
     def unpatchify(self, x, hw=None):
         """
         x: (N, T, patch_size**2 * C)
-        imgs: (N, H, W, C)
+        imgs: (N, C, H, W)
         """
         c = self.out_channels
         p = self.x_embedder.patch_size[0]
