@@ -126,7 +126,7 @@ T5_CONFIG = {
 class T5XXL:
     def __init__(self, model_folder: str, device: str = "cpu", dtype=torch.float32):
         with safe_open(
-            f"{model_folder}/t5xxl.safetensors", framework="pt", device="cpu"
+            f"{model_folder}/t5xxl_fp16.safetensors", framework="pt", device="cpu"    # the default filename when downloaded using hf_hub_download
         ) as f:
             self.model = T5XXLModel(T5_CONFIG, device=device, dtype=dtype)
             load_into(f, self.model.transformer, "", device, dtype)
